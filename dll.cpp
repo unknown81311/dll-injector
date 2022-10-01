@@ -45,7 +45,7 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved) {
     {
       module mod = SigScanner.GetModule("ScrapMechanic.exe");
       // scanning for the address of the variable:
-      DWORD moduleBase = SigScanner.FindSignature(mod.dwBase, mod.dwSize, devSignature, devMask) + 1;
+      DWORD moduleBase = SigScanner.FindSignature(mod.dwBase, mod.dwSize, devSignature, devMask);
 
       // Let's read the value of it:
       cout << moduleBase << endl;
@@ -53,7 +53,7 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved) {
       unsigned int devFlag = SigScanner.ReadMemory<int>(moduleBase);
 
       
-      string line3 = "found signicture?: " + std::to_string(devFlag) + "\n";
+      string line3 = std::to_string(sizeof(void *)) + '\t' + std::to_string(sizeof(DWORD)) + '\t' + std::to_string(sizeof(LPVOID)) + '\t' + "found signicture?: " + std::to_string(devFlag) + "\n";
       WriteConsole(con_handle, line3.c_str(), line3.size(), NULL, NULL);
 
       LPVOID dst = (LPVOID)devFlag;
@@ -68,8 +68,7 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved) {
       memset((void*)devFlag, 0x90, len);
 
       // Restore protection
-      string line3 = std::to_string(sizeof(void *)) + '\t' + std::to_string(sizeof(DWORD)) + '\t' + std::to_string(sizeof(LPVOID)) + '\t' + "found signicture?: " + std::to_string(devFlag) + "\n";
-      // VirtualProtect(dst, len, oldProtection, &temp);
+      VirtualProtect(dst, len, oldProtection, &temp);
 
     }
     
