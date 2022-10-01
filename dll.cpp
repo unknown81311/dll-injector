@@ -10,29 +10,14 @@
 #include <utility>
 #include "sigscanner.h"
 #include <limits>
-
-MODULEINFO GetModuleInfo(LPCWSTR moduleName) {
-  HMODULE moduleHandle;
-  MODULEINFO moduleInfo = { 0 };
-  moduleHandle = GetModuleHandleW(moduleName);
-  if (moduleHandle == NULL)
-    return moduleInfo;
-
-  GetModuleInformation(GetCurrentProcess(), moduleHandle, &moduleInfo, sizeof(MODULEINFO));
-
-  return moduleInfo;
-}
+#include <assert.h>
 
 BOOL WINAPI DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved) {
-
   switch (fdwReason) {
   case DLL_PROCESS_ATTACH:{
-    //setup console prints
-    FILE *stream;
-    freopen_s(&stream, "CONOUT$", "w", stdout);
 
     const HANDLE con_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-
+    
     //console logo and user data
     SetConsoleTextAttribute(con_handle, FOREGROUND_RED);
 
@@ -63,7 +48,7 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved) {
       DWORD moduleBase = SigScanner.FindSignature(mod.dwBase, mod.dwSize, devSignature, devMask) + 1;
 
       // Let's read the value of it:
-      cout << uppercase << hex << moduleBase << endl;
+      cout << moduleBase << endl;
       
       int devFlag = SigScanner.ReadMemory<int>(moduleBase);
 
