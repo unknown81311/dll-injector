@@ -20,10 +20,6 @@ using std::string;
 bool OverwriteOps() {
   const HANDLE con_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 
-  assert(WriteConsole(con_handle, "OverwriteOps\n", 14, NULL, NULL));
-  
-
-
 	SignatureScanner sigScanner(L"ScrapMechanic.exe");
 	if (!sigScanner.readMemory()) {
 		string line = "Failed while reading memory\n";
@@ -31,19 +27,20 @@ bool OverwriteOps() {
 		std::cout << line;
 		return false;
 	}
-  assert(WriteConsole(con_handle, "SignatureScanner sigScanner\n", 29, NULL, NULL));
 
-	DWORD64 compare_flag = sigScanner.scan("\x38\x83\xF0\x00\x00\x00\x0F\x85", "xxxxxxxx");
+	DWORD64 compare_flag = sigScanner.scan("\x38\x43\x78\x0f\x85\xa2\x0a\x00\x00", "xxxxx????");
 	if (!compare_flag) {
 		string line = "Failed while scanning\n";
 		assert(WriteConsole(con_handle, line.c_str(), line.size(), NULL, NULL));
 		std::cout << line;
 		return false;
 	}
-  assert(WriteConsole(con_handle, "sigScanner.scan\n", 17, NULL, NULL));
+
+  string line3 = "compare_flag " + std::to_string(compare_flag) + "\n";
+  assert(WriteConsole(con_handle, line3.c_str(), line3.length(), NULL, NULL));
 
 	LPVOID dst = (LPVOID) compare_flag;
-	size_t len = 12;
+	size_t len = 9;
 	DWORD oldProtection;
 	DWORD temp;
 
