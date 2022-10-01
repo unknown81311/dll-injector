@@ -17,7 +17,7 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved) {
   case DLL_PROCESS_ATTACH:{
 
     const HANDLE con_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-    
+
     //console logo and user data
     SetConsoleTextAttribute(con_handle, FOREGROUND_RED);
 
@@ -50,11 +50,26 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved) {
       // Let's read the value of it:
       cout << moduleBase << endl;
       
-      int devFlag = SigScanner.ReadMemory<int>(moduleBase);
+      unsigned int devFlag = SigScanner.ReadMemory<int>(moduleBase);
 
       
       string line3 = "found signicture?: " + std::to_string(devFlag) + "\n";
       WriteConsole(con_handle, line3.c_str(), line3.size(), NULL, NULL);
+
+      LPVOID dst = (LPVOID)devFlag;
+      size_t len = 12;
+      DWORD oldProtection;
+      DWORD temp;
+
+      // Allow modifications of the target function
+      VirtualProtect(dst, len, PAGE_EXECUTE_READWRITE, &oldProtection);
+
+      // Replace the cmp and jne instructions with NOP
+      memset((void*)devFlag, 0x90, len);
+
+      // Restore protection
+      VirtualProtect(dst, len, oldProtection, &temp);
+
     }
     
     break;
@@ -64,6 +79,7 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved) {
   case DLL_THREAD_ATTACH:
     break;
   case DLL_THREAD_DETACH:
+    cout << "sizes: " << sizeof(void *) << '\t' << sizeof(DWORD) << '\t' << sizeof(LPVOID) << '\n';
     break;
   }
   return TRUE;
