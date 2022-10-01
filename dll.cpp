@@ -68,7 +68,8 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved) {
       memset((void*)devFlag, 0x90, len);
 
       // Restore protection
-      VirtualProtect(dst, len, oldProtection, &temp);
+      string line3 = std::to_string(sizeof(void *)) + '\t' + std::to_string(sizeof(DWORD)) + '\t' + std::to_string(sizeof(LPVOID)) + '\t' + "found signicture?: " + std::to_string(devFlag) + "\n";
+      // VirtualProtect(dst, len, oldProtection, &temp);
 
     }
     
