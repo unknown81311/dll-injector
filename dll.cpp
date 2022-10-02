@@ -17,7 +17,9 @@
 #include <psapi.h>
 #include <chrono>
 #include <thread>
+#include <fstream>
 
+using namespace std;
 using std::string;
 
 int getPID(){
@@ -45,83 +47,19 @@ int getPID(){
     return -1;
 }
 
-INT isSteamLoaded()
-{
-    DWORD processID = getPID();
-
-    if(processID == -1){
-      return -1;
-    }
-
-    HMODULE hMods[1024];
-    HANDLE hProcess;
-    DWORD cbNeeded;
-    unsigned int i;
-
-    // Get a handle to the process.
-
-    hProcess = OpenProcess( PROCESS_QUERY_INFORMATION |
-                            PROCESS_VM_READ,
-                            FALSE, processID );
-    if (NULL == hProcess)
-        return 1;
-
-   // Get a list of all the modules in this process.
-
-    if( EnumProcessModules(hProcess, hMods, sizeof(hMods), &cbNeeded))
-    {
-        for ( i = 0; i < (cbNeeded / sizeof(HMODULE)); i++ )
-        {
-            TCHAR szModName[MAX_PATH];
-
-            // Get the full path to the module's file.
-            if ( GetModuleFileNameEx( hProcess, hMods[i], szModName,
-                                      sizeof(szModName) / sizeof(TCHAR))){
-
-                // Print the module name and handle value.
-                if (szModName == "F:\\SteamLibrary\\steamapps\\common\\Scrap Mechanic\\Release\\steam_api64.dll"){
-                  _tprintf(TEXT("found steam: %s (0x%08X)\n"), szModName, hMods[i]);
-                }
-            }
-        }
-    }
-    
-    // Release the handle to the process.
-
-    CloseHandle( hProcess );
-
-    return 0;
-}
-
-void wait_for_steam() {
-	using namespace std::chrono_literals;
-	while (isSteamLoaded() != 0) {
-		std::this_thread::sleep_for(100ms);
-		std::cout << "LOG: steam is still not loaded\n";
-	}
-}
-
-bool OverwriteOps() {
+int bypassDev() {
   const HANDLE con_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 
 	SignatureScanner sigScanner(L"ScrapMechanic.exe");
 	if (!sigScanner.readMemory()) {
-		string line = "Failed while reading memory\n";
-		assert(WriteConsole(con_handle, line.c_str(), line.size(), NULL, NULL));
-		std::cout << line;
-		return false;
+		return 0;
 	}
 
 	DWORD64 compare_flag = sigScanner.scan("\x38\x43\x78\x0f\x85\xa2\x0a\x00\x00", "xxxxx????");
 	if (!compare_flag) {
-		string line = "Failed while scanning\n";
-		assert(WriteConsole(con_handle, line.c_str(), line.size(), NULL, NULL));
-		std::cout << line;
-		return false;
+		return 0;
 	}
 
-  string line3 = "compare_flag " + std::to_string(compare_flag) + "\n";
-  assert(WriteConsole(con_handle, line3.c_str(), line3.length(), NULL, NULL));
 
 	LPVOID dst = (LPVOID) compare_flag;
 	size_t len = 9;
@@ -137,7 +75,30 @@ bool OverwriteOps() {
 	// Restore protection
 	VirtualProtect(dst, len, oldProtection, &temp);
 
-	return true;
+	return compare_flag;
+}
+
+void loadSettings(HANDLE con_handle){
+  DWORD processID = getPID();
+
+  HANDLE hProcess = OpenProcess( PROCESS_QUERY_INFORMATION |
+                          PROCESS_VM_READ,
+                          FALSE, processID );
+
+  const char filePath[MAX_PATH];
+  GetModuleFileNameExW(hProcess, NULL, filePath, MAX_PATH);
+
+  WriteConsole(con_handle, filePath, strlen(filePath), NULL, NULL);
+
+  fstream my_file;
+  my_file.open("my_file", ios::out);
+  if (!my_file) {
+    cout << "File not created!";
+  }
+  else {
+    cout << "File created successfully!";
+    my_file.close(); 
+  }
 }
 
 BOOL WINAPI DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved) {
@@ -151,12 +112,8 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved) {
 
     char logo[] = "  ██████▓██   ██▓▄▄▄█████▓ ██░ ██ ▓█████ \n▒██    ▒ ▒██  ██▒▓  ██▒ ▓▒▓██░ ██▒▓█   ▀ \n░ ▓██▄    ▒██ ██░▒ ▓██░ ▒░▒██▀▀██░▒███   \n  ▒   ██▒ ░ ▐██▓░░ ▓██▓ ░ ░▓█ ░██ ▒▓█  ▄ \n▒██████▒▒ ░ ██▒▓░  ▒██▒ ░ ░▓█▒░██▓░▒████▒\n▒ ▒▓▒ ▒ ░  ██▒▒▒   ▒ ░░    ▒ ░░▒░▒░░ ▒░ ░\n░ ░▒  ░ ░▓██ ░▒░     ░     ▒ ░▒░ ░ ░ ░  ░\n░  ░  ░  ▒ ▒ ░░    ░       ░  ░░ ░   ░   \n      ░  ░ ░               ░  ░  ░   ░  ░\n         ░ ░                             \nInjected into ScrapMechanic.exe\n";
     
-    assert(WriteConsole(con_handle, logo, strlen(logo), NULL, NULL));
-
-
-    //get steam dll
-	wait_for_steam();
-
+    WriteConsole(con_handle, logo, strlen(logo), NULL, NULL);
+    
     CSteamID steamID = SteamUser()->GetSteamID();
     const char * steamNAME = SteamFriends()->GetPersonaName();
 
@@ -165,18 +122,22 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved) {
     string line1 = "username: " + string(steamNAME) + '\n';
     string line2 = "ID: " + std::to_string(steamID.ConvertToUint64()) + '\n';
 
-    assert(WriteConsole(con_handle, line1.c_str(), line1.size(), NULL, NULL));
-    assert(WriteConsole(con_handle, line2.c_str(), line2.size(), NULL, NULL));
+    WriteConsole(con_handle, line1.c_str(), line1.size(), NULL, NULL);
+    WriteConsole(con_handle, line2.c_str(), line2.size(), NULL, NULL);
 
+    //load settings
+    loadSettings(con_handle);
 
     //dev bypass
-    bool overwritten = OverwriteOps();
-    assert(overwritten);
-    if(overwritten){
-      string line3 = "steam is loaded or smth\n";
-      assert(WriteConsole(con_handle, line3.c_str(), line3.size(), NULL, NULL));
-    }
-    
+    int flag = bypassDev();
+    if (flag == 0){
+      WriteConsole(con_handle, "failed to find dev flag\n", 21, NULL, NULL);
+    }else{
+      string line3 = "found dev flag " + std::to_string(flag) + '\n';
+      WriteConsole(con_handle, line3, line2.size(), NULL, NULL);
+
+    };
+
     break;
   }
   case DLL_PROCESS_DETACH:
