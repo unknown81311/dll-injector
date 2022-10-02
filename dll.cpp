@@ -15,6 +15,8 @@
 #include <iostream>
 #include <tchar.h>
 #include <psapi.h>
+#include <chrono>
+#include <thread>
 
 using std::string;
 
@@ -91,6 +93,14 @@ INT isSteamLoaded()
     return 0;
 }
 
+void wait_for_steam() {
+	using namespace std::chrono_literals;
+	while (isSteamLoaded() != 0) {
+		std::this_thread::sleep_for(100ms);
+		std::cout << "LOG: steam is still not loaded\n";
+	}
+}
+
 bool OverwriteOps() {
   const HANDLE con_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 
@@ -145,9 +155,7 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved) {
 
 
     //get steam dll
-    int iststeamloaded = isSteamLoaded();
-    assert(iststeamloaded);
-
+	wait_for_steam();
 
     CSteamID steamID = SteamUser()->GetSteamID();
     const char * steamNAME = SteamFriends()->GetPersonaName();
@@ -166,7 +174,7 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved) {
     assert(overwritten);
     if(overwritten){
       string line3 = "steam is loaded or smth\n";
-      assert(WriteConsole(con_handle, line2.c_str(), line2.size(), NULL, NULL));
+      assert(WriteConsole(con_handle, line3.c_str(), line3.size(), NULL, NULL));
     }
     
     break;
