@@ -12,4 +12,5 @@ a dll-injector cheat for scrap mechanic
 ---
 #### working on
 1. hault till steam DLL is loaded
-2. send chat message
+2. get key pressed
+3. send chat message
