@@ -125,33 +125,32 @@ void writeUserData(HANDLE con_handle){
     WriteConsole(con_handle, line2.c_str(), line2.size(), NULL, NULL);
 }
 
+DWORD WINAPI Main(HMODULE hModule){
+  const HANDLE con_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+
+  //console logo and user data
+  writeUserData(con_handle);
+
+  //load settings
+  // loadSettings(con_handle);
+
+  //dev bypass
+  bypassDev(con_handle);
+
+  //getkeys
+  while (1){
+    if(GetAsyncKeyState(VK_TAB) & 0x01){
+      WriteConsole(con_handle, "pressed TAB\n", 13, NULL, NULL);
+    }
+  }
+  return 0;
+}
+
+
 BOOL WINAPI DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved) {
   switch (fdwReason) {
   case DLL_PROCESS_ATTACH:{
-    const HANDLE con_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-
-    //console logo and user data
-    writeUserData(con_handle);
-
-    //load settings
-    // loadSettings(con_handle);
-
-    //dev bypass
-    bypassDev(con_handle);
-
-    //getkeys
-    // int pressedKeys[4];
-
-    // while(1){
-      
-
-    //   for (int i = 0; i < 0xFE; i++) {
-    //     bool key = GetKeyState(i);
-    //     if (key & 0x8000){
-    //        cout << i << "\n";
-    //     }
-    //   }
-    // }
+    CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)Main, hModule, NULL, NULL);
     break;
   }
   case DLL_PROCESS_DETACH:
