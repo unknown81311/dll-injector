@@ -13,9 +13,83 @@
 #include <limits>
 #include <cassert>
 #include <iostream>
+#include <tchar.h>
+#include <psapi.h>
 
 using std::string;
 
+int getPID(){
+    PROCESSENTRY32 entry;
+    entry.dwSize = sizeof(PROCESSENTRY32);
+
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
+
+    if (Process32First(snapshot, &entry) == TRUE)
+    {
+        while (Process32Next(snapshot, &entry) == TRUE)
+        {
+            if (stricmp(entry.szExeFile, "ScrapMechanic.exe") == 0)
+            {
+                HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, entry.th32ProcessID);
+                CloseHandle(hProcess);
+
+                return entry.th32ProcessID;
+            }
+        }
+    }
+
+    CloseHandle(snapshot);
+
+    return -1;
+}
+
+INT isSteamLoaded()
+{
+    DWORD processID = getPID();
+
+    if(processID == -1){
+      return -1;
+    }
+
+    HMODULE hMods[1024];
+    HANDLE hProcess;
+    DWORD cbNeeded;
+    unsigned int i;
+
+    // Get a handle to the process.
+
+    hProcess = OpenProcess( PROCESS_QUERY_INFORMATION |
+                            PROCESS_VM_READ,
+                            FALSE, processID );
+    if (NULL == hProcess)
+        return 1;
+
+   // Get a list of all the modules in this process.
+
+    if( EnumProcessModules(hProcess, hMods, sizeof(hMods), &cbNeeded))
+    {
+        for ( i = 0; i < (cbNeeded / sizeof(HMODULE)); i++ )
+        {
+            TCHAR szModName[MAX_PATH];
+
+            // Get the full path to the module's file.
+            if ( GetModuleFileNameEx( hProcess, hMods[i], szModName,
+                                      sizeof(szModName) / sizeof(TCHAR))){
+
+                // Print the module name and handle value.
+                if (szModName == "F:\\SteamLibrary\\steamapps\\common\\Scrap Mechanic\\Release\\steam_api64.dll"){
+                  _tprintf(TEXT("found steam: %s (0x%08X)\n"), szModName, hMods[i]);
+                }
+            }
+        }
+    }
+    
+    // Release the handle to the process.
+
+    CloseHandle( hProcess );
+
+    return 0;
+}
 
 bool OverwriteOps() {
   const HANDLE con_handle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -56,7 +130,6 @@ bool OverwriteOps() {
 	return true;
 }
 
-
 BOOL WINAPI DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved) {
   switch (fdwReason) {
   case DLL_PROCESS_ATTACH:{
@@ -70,6 +143,12 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved) {
     
     assert(WriteConsole(con_handle, logo, strlen(logo), NULL, NULL));
 
+
+    //get steam dll
+    int iststeamloaded = isSteamLoaded();
+    assert(iststeamloaded);
+
+
     CSteamID steamID = SteamUser()->GetSteamID();
     const char * steamNAME = SteamFriends()->GetPersonaName();
 
@@ -81,8 +160,15 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved) {
     assert(WriteConsole(con_handle, line1.c_str(), line1.size(), NULL, NULL));
     assert(WriteConsole(con_handle, line2.c_str(), line2.size(), NULL, NULL));
 
+
+    //dev bypass
     bool overwritten = OverwriteOps();
     assert(overwritten);
+    if(overwritten){
+      string line3 = "steam is loaded or smth\n";
+      assert(WriteConsole(con_handle, line2.c_str(), line2.size(), NULL, NULL));
+    }
+    
     break;
   }
   case DLL_PROCESS_DETACH:
