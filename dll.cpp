@@ -47,19 +47,22 @@ int getPID(){
     return -1;
 }
 
-int bypassDev() {
-  const HANDLE con_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+void bypassDev(HANDLE con_handle) {
 
 	SignatureScanner sigScanner(L"ScrapMechanic.exe");
 	if (!sigScanner.readMemory()) {
-		return 0;
+    WriteConsole(con_handle, "failed to find dev flag\n", 21, NULL, NULL);
+		return;
 	}
 
 	DWORD64 compare_flag = sigScanner.scan("\x38\x43\x78\x0f\x85\xa2\x0a\x00\x00", "xxxxx????");
 	if (!compare_flag) {
-		return 0;
+    WriteConsole(con_handle, "failed to find dev flag\n", 21, NULL, NULL);
+		return;
 	}
 
+  string line = "found dev flag " + std::to_string(compare_flag) + '\n';
+  WriteConsole(con_handle, line.c_str(), line.size(), NULL, NULL);
 
 	LPVOID dst = (LPVOID) compare_flag;
 	size_t len = 9;
@@ -75,7 +78,8 @@ int bypassDev() {
 	// Restore protection
 	VirtualProtect(dst, len, oldProtection, &temp);
 
-	return compare_flag;
+
+	return;
 }
 
 void loadSettings(HANDLE con_handle){
@@ -101,13 +105,7 @@ void loadSettings(HANDLE con_handle){
   }
 }
 
-BOOL WINAPI DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved) {
-  switch (fdwReason) {
-  case DLL_PROCESS_ATTACH:{
-
-    const HANDLE con_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-
-    //console logo and user data
+void writeUserData(HANDLE con_handle){
     SetConsoleTextAttribute(con_handle, FOREGROUND_RED);
 
     char logo[] = "  ██████▓██   ██▓▄▄▄█████▓ ██░ ██ ▓█████ \n▒██    ▒ ▒██  ██▒▓  ██▒ ▓▒▓██░ ██▒▓█   ▀ \n░ ▓██▄    ▒██ ██░▒ ▓██░ ▒░▒██▀▀██░▒███   \n  ▒   ██▒ ░ ▐██▓░░ ▓██▓ ░ ░▓█ ░██ ▒▓█  ▄ \n▒██████▒▒ ░ ██▒▓░  ▒██▒ ░ ░▓█▒░██▓░▒████▒\n▒ ▒▓▒ ▒ ░  ██▒▒▒   ▒ ░░    ▒ ░░▒░▒░░ ▒░ ░\n░ ░▒  ░ ░▓██ ░▒░     ░     ▒ ░▒░ ░ ░ ░  ░\n░  ░  ░  ▒ ▒ ░░    ░       ░  ░░ ░   ░   \n      ░  ░ ░               ░  ░  ░   ░  ░\n         ░ ░                             \nInjected into ScrapMechanic.exe\n";
@@ -124,19 +122,22 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved) {
 
     WriteConsole(con_handle, line1.c_str(), line1.size(), NULL, NULL);
     WriteConsole(con_handle, line2.c_str(), line2.size(), NULL, NULL);
+}
+
+BOOL WINAPI DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved) {
+  switch (fdwReason) {
+  case DLL_PROCESS_ATTACH:{
+    const HANDLE con_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    //console logo and user data
+    writeUserData(con_handle);
 
     //load settings
     loadSettings(con_handle);
 
     //dev bypass
-    int flag = bypassDev();
-    if (flag == 0){
-      WriteConsole(con_handle, "failed to find dev flag\n", 21, NULL, NULL);
-    }else{
-      string line3 = "found dev flag " + std::to_string(flag) + '\n';
-      WriteConsole(con_handle, line3, line2.size(), NULL, NULL);
+    bypassDev(con_handle);
 
-    };
 
     break;
   }
