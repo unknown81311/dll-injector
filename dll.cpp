@@ -18,6 +18,7 @@
 #include <chrono>
 #include <thread>
 #include <fstream>
+#include <winuser.h>
 
 using namespace std;
 using std::string;
@@ -82,28 +83,28 @@ void bypassDev(HANDLE con_handle) {
 	return;
 }
 
-void loadSettings(HANDLE con_handle){
-  DWORD processID = getPID();
+// void loadSettings(HANDLE con_handle){
+//   DWORD processID = getPID();
 
-  HANDLE hProcess = OpenProcess( PROCESS_QUERY_INFORMATION |
-                          PROCESS_VM_READ,
-                          FALSE, processID );
+//   HANDLE hProcess = OpenProcess( PROCESS_QUERY_INFORMATION |
+//                           PROCESS_VM_READ,
+//                           FALSE, processID );
 
-  const char filePath[MAX_PATH];
-  GetModuleFileNameExW(hProcess, NULL, filePath, MAX_PATH);
+//   const char filePath[MAX_PATH];
+//   GetModuleFileNameExW(hProcess, NULL, filePath, MAX_PATH);
 
-  WriteConsole(con_handle, filePath, strlen(filePath), NULL, NULL);
+//   WriteConsole(con_handle, filePath, strlen(filePath), NULL, NULL);
 
-  fstream my_file;
-  my_file.open("my_file", ios::out);
-  if (!my_file) {
-    cout << "File not created!";
-  }
-  else {
-    cout << "File created successfully!";
-    my_file.close(); 
-  }
-}
+//   fstream my_file;
+//   my_file.open("my_file", ios::out);
+//   if (!my_file) {
+//     cout << "File not created!";
+//   }
+//   else {
+//     cout << "File created successfully!";
+//     my_file.close(); 
+//   }
+// }
 
 void writeUserData(HANDLE con_handle){
     SetConsoleTextAttribute(con_handle, FOREGROUND_RED);
@@ -133,12 +134,24 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved) {
     writeUserData(con_handle);
 
     //load settings
-    loadSettings(con_handle);
+    // loadSettings(con_handle);
 
     //dev bypass
     bypassDev(con_handle);
 
+    //getkeys
+    // int pressedKeys[4];
 
+    // while(1){
+      
+
+    //   for (int i = 0; i < 0xFE; i++) {
+    //     bool key = GetKeyState(i);
+    //     if (key & 0x8000){
+    //        cout << i << "\n";
+    //     }
+    //   }
+    // }
     break;
   }
   case DLL_PROCESS_DETACH:
