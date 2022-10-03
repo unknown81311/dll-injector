@@ -8,8 +8,10 @@ a dll-injector cheat for scrap mechanic
 3. get steam name
 4. get steam ID
 5. removing dev flag check
+6. settings file
+7. get keys pressed
 
 ---
 #### working on
-1. get key pressed
-2. send chat message
+1. send chat message
+2. open mygui (hook dx11) (hook input)
