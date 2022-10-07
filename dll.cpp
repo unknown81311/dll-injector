@@ -194,7 +194,7 @@ DWORD WINAPI Main(HMODULE hModule) {
 
   // getkeys
   while (1) {
-    bool isFocused = GetFocus() == FindWindowByProcessIdAndClassName(processID, className);
+    bool isFocused = GetForegroundWindow() == FindWindowByProcessIdAndClassName(processID, className);
 
     printf("isFocused=%d\n", isFocused);
 
