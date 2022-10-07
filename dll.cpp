@@ -50,6 +50,30 @@ int getPID() {
   return -1;
 }
 
+HWND FindWindowByProcessIdAndClassName(DWORD pid, TCHAR* szWndClassName)
+{
+    HWND hCurWnd = GetTopWindow(0);
+    while (hCurWnd != NULL)
+    {
+        DWORD cur_pid;
+        DWORD dwTheardId = GetWindowThreadProcessId(hCurWnd, &cur_pid);
+                
+        if (cur_pid == pid)
+        {
+            if (IsWindowVisible(hCurWnd) != 0)
+            {
+                TCHAR szClassName[256];
+                GetClassName(hCurWnd, szClassName, 256);
+                if (_tcscmp(szClassName,szWndClassName)==0)
+                    return hCurWnd;
+            }
+        }
+        hCurWnd = GetNextWindow(hCurWnd, GW_HWNDNEXT);
+    }
+    return NULL;
+}
+
+
 std::vector<uint8_t> bypassDev(HANDLE con_handle) {
   SignatureScanner sigScanner(L"ScrapMechanic.exe");
 
@@ -134,6 +158,7 @@ void writeUserData(HANDLE con_handle) {
 }
 
 DWORD WINAPI Main(HMODULE hModule) {
+  DWORD processID = getPID();
   const HANDLE con_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 
   // console logo and user data
@@ -161,15 +186,25 @@ DWORD WINAPI Main(HMODULE hModule) {
     WriteConsole(con_handle, line.c_str(), line.size(), NULL, NULL);
   }
 
+  TCHAR className[256];
+  GetClassName(FindWindowA(NULL, "Scrap Mechanic"), className, 256);
+
+
+  
+
   // getkeys
   while (1) {
+    bool isFocused = GetFocus() == FindWindowByProcessIdAndClassName(processID, className);
+
+    printf("isFocused=%d\n", isFocused);
+
     for(int i = VK_LBUTTON; i < VK_OEM_CLEAR;i++){
-      if (GetAsyncKeyState(VK_TAB) & 0x01) {
-        WriteConsole(con_handle, "pressed TAB\n", 13, NULL, NULL);
-      }
+      // if (GetAsyncKeyState(VK_TAB) & 0x01) {
+      //   WriteConsole(con_handle, "pressed TAB\n", 13, NULL, NULL);
+      // }
       if (GetAsyncKeyState(i) & 0x01) {
-        string line = "pressed: " + std::to_string(i) + "\n";
-        WriteConsole(con_handle, line.c_str(), line.size(), NULL, NULL);
+        // string line = "pressed: " + std::to_string(i) + "\n";
+        // WriteConsole(con_handle, line.c_str(), line.size(), NULL, NULL);
       }
     }
   }
