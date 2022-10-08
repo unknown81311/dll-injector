@@ -23,6 +23,9 @@
 #include <cstdlib>
 #include <filesystem>
 
+#define WM_KEYUP                        0x0101
+#define WM_KEYDOWN                      0x0100
+
 namespace fsex = std::experimental::filesystem;
 namespace fs = std::filesystem;
 using namespace std;
@@ -72,7 +75,6 @@ HWND FindWindowByProcessIdAndClassName(DWORD pid, TCHAR* szWndClassName)
     }
     return NULL;
 }
-
 
 std::vector<uint8_t> bypassDev(HANDLE con_handle) {
   SignatureScanner sigScanner(L"ScrapMechanic.exe");
@@ -127,10 +129,19 @@ void loadSettings(HANDLE con_handle){
   sm /= "Sythe";
   fs::create_directory(sm);
   std::cout << sm << '\n';
-  sm /= "data";
+  sm /= "keybinds";
   std::cout << sm << '\n';
-  std::fstream data_file;
-  data_file.open(sm, std::fstream::out);
+
+  // create template forkeybinds
+  
+
+  if (fs::exists(sm)) {
+    std::fstream data_file;
+    data_file.open(sm, std::fstream::out);
+    // return template
+  }else{
+    // return data
+  }
 }
 
 void writeUserData(HANDLE con_handle) {
@@ -196,15 +207,22 @@ DWORD WINAPI Main(HMODULE hModule) {
   while (1) {
     bool isFocused = GetForegroundWindow() == FindWindowByProcessIdAndClassName(processID, className);
 
-    printf("isFocused=%d\n", isFocused);
+    // printf("isFocused=%d\n", isFocused);
+    if (isFocused) {
+      std::vector<int> pressedKeys;
+      constexpr int MAX_KEYS = 4;
 
-    for(int i = VK_LBUTTON; i < VK_OEM_CLEAR;i++){
-      // if (GetAsyncKeyState(VK_TAB) & 0x01) {
-      //   WriteConsole(con_handle, "pressed TAB\n", 13, NULL, NULL);
-      // }
-      if (GetAsyncKeyState(i) & 0x01) {
-        // string line = "pressed: " + std::to_string(i) + "\n";
-        // WriteConsole(con_handle, line.c_str(), line.size(), NULL, NULL);
+      for (int i = VK_LBUTTON; i < VK_OEM_CLEAR && pressedKeys.size() < MAX_KEYS; i++) {
+          if (GetAsyncKeyState(i) & 0x01) { // if this key is being pressed add it to the array
+              pressedKeys.push_back(i);
+          }
+      }
+      if (pressedKeys.size() > 0) {
+          std::cout << "pressed ";
+          for (auto key : pressedKeys) {
+              std::cout << key << ' ';
+          }
+          std::cout << '\n' << std::flush;
       }
     }
   }
