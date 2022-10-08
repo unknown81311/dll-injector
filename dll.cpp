@@ -168,6 +168,81 @@ void writeUserData(HANDLE con_handle) {
   WriteConsole(con_handle, line2.c_str(), line2.size(), NULL, NULL);
 }
 
+void dxshit(){
+  HMODULE libD3D11;
+  if ((libD3D11 = ::GetModuleHandle("d3d11.dll")) == NULL)
+  {
+      ::DestroyWindow(window);
+      ::UnregisterClass(windowClass.lpszClassName, windowClass.hInstance);
+      return Status::ModuleNotFoundError;
+  }
+
+  void* D3D11CreateDeviceAndSwapChain;
+  if ((D3D11CreateDeviceAndSwapChain = ::GetProcAddress(libD3D11, "D3D11CreateDeviceAndSwapChain")) == NULL)
+  {
+      ::DestroyWindow(window);
+      ::UnregisterClass(windowClass.lpszClassName, windowClass.hInstance);
+      return Status::UnknownError;
+  }
+
+  D3D_FEATURE_LEVEL featureLevel;
+  const D3D_FEATURE_LEVEL featureLevels[] = { D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_11_0 };
+
+  DXGI_RATIONAL refreshRate;
+  refreshRate.Numerator = 60;
+  refreshRate.Denominator = 1;
+
+  DXGI_MODE_DESC bufferDesc;
+  bufferDesc.Width = 100;
+  bufferDesc.Height = 100;
+  bufferDesc.RefreshRate = refreshRate;
+  bufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+  bufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+  bufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+
+  DXGI_SAMPLE_DESC sampleDesc;
+  sampleDesc.Count = 1;
+  sampleDesc.Quality = 0;
+
+  DXGI_SWAP_CHAIN_DESC swapChainDesc;
+  swapChainDesc.BufferDesc = bufferDesc;
+  swapChainDesc.SampleDesc = sampleDesc;
+  swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+  swapChainDesc.BufferCount = 1;
+  swapChainDesc.OutputWindow = window;
+  swapChainDesc.Windowed = 1;
+  swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+  swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+
+  IDXGISwapChain* swapChain;
+  ID3D11Device* device;
+  ID3D11DeviceContext* context;
+
+  if (((long(__stdcall*)(
+      IDXGIAdapter*,
+      D3D_DRIVER_TYPE,
+      HMODULE,
+      UINT,
+      const D3D_FEATURE_LEVEL*,
+      UINT,
+      UINT,
+      const DXGI_SWAP_CHAIN_DESC*,
+      IDXGISwapChain**,
+      ID3D11Device**,
+      D3D_FEATURE_LEVEL*,
+      ID3D11DeviceContext**))(D3D11CreateDeviceAndSwapChain))(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, 0, featureLevels, 2, D3D11_SDK_VERSION, &swapChainDesc, &swapChain, &device, &featureLevel, &context) < 0)
+  {
+      ::DestroyWindow(window);
+      ::UnregisterClass(windowClass.lpszClassName, windowClass.hInstance);
+      return Status::UnknownError;
+  }
+
+  g_methodsTable = (uint150_t*)::calloc(205, sizeof(uint150_t));
+  ::memcpy(g_methodsTable, *(uint150_t**)swapChain, 18 * sizeof(uint150_t));
+  ::memcpy(g_methodsTable + 18, *(uint150_t**)device, 43 * sizeof(uint150_t));
+  ::memcpy(g_methodsTable + 18 + 43, *(uint150_t**)context, 144 * sizeof(uint150_t));
+}
+
 DWORD WINAPI Main(HMODULE hModule) {
   DWORD processID = getPID();
   const HANDLE con_handle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -197,12 +272,11 @@ DWORD WINAPI Main(HMODULE hModule) {
     WriteConsole(con_handle, line.c_str(), line.size(), NULL, NULL);
   }
 
+  dxshit();
+
+
   TCHAR className[256];
   GetClassName(FindWindowA(NULL, "Scrap Mechanic"), className, 256);
-
-
-  
-
   // getkeys
   while (1) {
     bool isFocused = GetForegroundWindow() == FindWindowByProcessIdAndClassName(processID, className);
