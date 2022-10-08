@@ -15,3 +15,5 @@ a dll-injector cheat for scrap mechanic
 #### working on
 1. send chat message
 2. open mygui (hook dx11) (hook input)
+3. settings file format
+4. keybinds callback
