@@ -22,6 +22,9 @@
 #include <winuser.h>
 #include <cstdlib>
 #include <filesystem>
+#include "kiero.h"
+#include <d3d9.h>
+#include <Windows.h>
 
 #define WM_KEYUP                        0x0101
 #define WM_KEYDOWN                      0x0100
@@ -229,9 +232,46 @@ DWORD WINAPI Main(HMODULE hModule) {
   return 0;
 }
 
+// Create the type of function that we will hook
+typedef long(__stdcall* EndScene)(LPDIRECT3DDEVICE9);
+static EndScene oEndScene = NULL;
+
+// Declare the detour function
+long __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice)
+{
+  // ... Your magic here ...
+  
+  // static bool init = false;
+  // if (!init)
+  // {
+  //  MessageBox(0, "Boom! It's works!", "Kiero", MB_OK);
+  //  init = true;
+  // }
+  
+  return oEndScene(pDevice);
+}
+
+int kieroExampleThread()
+{
+  if (kiero::init(kiero::RenderType::D3D9) == kiero::Status::Success)
+  // or
+  if (kiero::init(kiero::RenderType::Auto) == kiero::Status::Success)
+  {
+    // define KIERO_USE_MINHOOK must be 1
+    // the index of the required function can be found in the METHODSTABLE.txt
+    kiero::bind(42, (void**)&oEndScene, hkEndScene);
+    
+    // If you just need to get the function address you can use the kiero::getMethodsTable function
+    oEndScene = (EndScene)kiero::getMethodsTable()[42];
+  }
+
+  return 0;
+}
+
 BOOL WINAPI DllMain(HMODULE hModule, DWORD fdwReason, LPVOID lpReserved) {
   switch (fdwReason) {
     case DLL_PROCESS_ATTACH: {
+      CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)kieroExampleThread, NULL, 0, NULL);
       CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE) Main, hModule, NULL, NULL);
       break;
     }
